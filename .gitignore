@@ -1,4 +1,7 @@
 .env
 venv/
 OAuth Key.txt
+client_secret*.json
+token.json
+generated_videos/
 

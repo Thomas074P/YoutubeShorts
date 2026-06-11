@@ -34,20 +34,27 @@ def main():
     VIDEO_DATEI_PFAD = "dein_video.mp4"
     # =================================================================
 
-    # Manuelle Konfiguration statt client_secret.json
-    client_config = {
-        "installed": {
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        }
-    }
-
     # Authentifizierung starten
+    # Bevorzuge client_secret.json (Desktop-App-Typ aus Google Cloud Console)
+    CLIENT_SECRET_FILE = "client_secret.json"
     print("Starte Authentifizierung... Bitte öffne den Browser, falls er sich nicht automatisch öffnet.")
-    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_config(
-        client_config, SCOPES)
+    if os.path.exists(CLIENT_SECRET_FILE):
+        print(f"✅ Verwende {CLIENT_SECRET_FILE}")
+        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+            CLIENT_SECRET_FILE, SCOPES)
+    else:
+        print("⚠️  client_secret.json nicht gefunden – verwende .env-Zugangsdaten")
+        client_config = {
+            "installed": {
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "redirect_uris": ["http://localhost", "urn:ietf:wg:oauth:2.0:oob"],
+            }
+        }
+        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_config(
+            client_config, SCOPES)
     credentials = flow.run_local_server(port=0)
     
     # API-Client aufbauen

@@ -256,45 +256,39 @@ class AIVideoGenerator:
         output_path = self.output_dir / output_filename
         
         try:
-            # Grundkommando für Video-Erstellung
-            cmd = [
-                "ffmpeg",
-                "-loop", "1",
-                "-i", image_path,
+            # Baue ein robustes FFmpeg-Kommando: Inputs zuerst, dann Optionen
+            cmd = ["ffmpeg", "-y"]
+
+            # Video-Input (Standbild loop)
+            cmd += ["-loop", "1", "-framerate", str(self.fps), "-i", image_path]
+
+            # Audio-Input (entweder Musikdatei oder stille Quelle)
+            if music_path and os.path.exists(music_path):
+                cmd += ["-i", music_path]
+                audio_mapping = True
+            else:
+                # nutze lavfi silent input
+                cmd += ["-f", "lavfi", "-i", f"anullsrc=r=44100:cl=mono"]
+                audio_mapping = False
+
+            # Video/Output-Optionen
+            vf = f"scale={self.width}:{self.height}:force_original_aspect_ratio=decrease,pad={self.width}:{self.height}:(ow-iw)/2:(oh-ih)/2"
+            cmd += [
                 "-t", str(self.duration),
-                "-vf", f"scale={self.width}:{self.height}:force_original_aspect_ratio=decrease,pad={self.width}:{self.height}:(ow-iw)/2:(oh-ih)/2",
+                "-vf", vf,
                 "-r", str(self.fps),
                 "-c:v", "libx264",
                 "-pix_fmt", "yuv420p",
-                "-preset", "fast"
+                "-preset", "fast",
+                "-c:a", "aac",
+                "-b:a", "128k",
+                "-shortest",
+                str(output_path)
             ]
-            
-            # Füge Audio hinzu
-            if music_path and os.path.exists(music_path):
-                cmd.extend([
-                    "-i", music_path,
-                    "-c:a", "aac",
-                    "-b:a", "128k",
-                    "-shortest"
-                ])
-            else:
-                # Stille Audio
-                cmd.extend([
-                    "-f", "lavfi",
-                    "-i", f"anullsrc=r=44100:cl=mono",
-                    "-c:a", "aac",
-                    "-t", str(self.duration)
-                ])
-            
-            cmd.extend([str(output_path), "-y"])
-            
+
             print(f"💾 Speichere Video: {output_path}")
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=120
-            )
+            print("🔧 FFmpeg Kommando:", " ".join(cmd))
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
             
             if result.returncode != 0:
                 print(f"❌ FFmpeg Fehler: {result.stderr}")

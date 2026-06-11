@@ -1,3 +1,9 @@
+requests
+python-dotenv
+Pillow
+numpy
+google-api-python-client
+google-auth-oauthlib
 google-auth-oauthlib
 google-api-python-client
 Pillow
